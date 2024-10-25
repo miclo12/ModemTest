@@ -21,28 +21,39 @@
                     backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
                     borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
                     borderWidth: 1,
-                    data: [0, 0]  // Initial values
+                    data: [0, 0] // Initial values
                 }]
             },
             options: {
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        max: 1
                     }
                 }
             }
         });
 
-        // Function to fetch sensor data and update the chart
-        async function updateChart() {
-            const response = await fetch('/data');
-            const data = await response.json();
-            sensorChart.data.datasets[0].data = [data.sensor1, data.sensor2];
-            sensorChart.update();
+        // Function to fetch data from /data endpoint and update the chart
+        async function fetchDataAndUpdateChart() {
+            try {
+                const response = await fetch('/data');
+                const data = await response.json();
+                console.log(data);
+                
+                // Update chart with fetched data
+                sensorChart.data.datasets[0].data = [data.sensor1, data.sensor2];
+                sensorChart.update();
+            } catch (error) {
+                console.error('Error fetching sensor data:', error);
+            }
         }
 
-        // Update chart every 2 seconds
-        setInterval(updateChart, 2000);
+        // Fetch and update chart every 5 seconds (or adjust timing as needed)
+        setInterval(fetchDataAndUpdateChart, 5000);
+
+        // Initial fetch when page loads
+        fetchDataAndUpdateChart();
     </script>
 </body>
 </html>
