@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Sensor Data Visualization</h1>
+    <canvas id="sensorChart" width="400" height="200"></canvas>
+
+    <script>
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Sensor 1', 'Sensor 2'],
+                datasets: [{
+                    label: 'Sensor Values',
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                    borderWidth: 1,
+                    data: [0, 0]  // Initial values
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Function to fetch sensor data and update the chart
+        async function updateChart() {
+            const response = await fetch('/data');
+            const data = await response.json();
+            sensorChart.data.datasets[0].data = [data.sensor1, data.sensor2];
+            sensorChart.update();
+        }
+
+        // Update chart every 2 seconds
+        setInterval(updateChart, 2000);
+    </script>
+</body>
+</html>
