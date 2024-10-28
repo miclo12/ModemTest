@@ -69,11 +69,16 @@ app.get('/sensor-data', (req, res) => {
 });
 
 // Send sensor data to the chart or graph in the client-side JavaScript
+
+
 app.get('/data', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');  // Disable caching for this endpoint
     res.json({ sensor1, sensor2 });
 });
+
 
 // Start the server and listen on the defined port
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}/`);
 });
+
