@@ -62,11 +62,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Receive sensor data from the modem via HTTP GET
 app.get('/sensor-data', (req, res) => {
-    sensor1 = parseFloat(req.query.sensor1) || sensor1;  // Parse to float to ensure decimal values
+    sensor1 = parseFloat(req.query.sensor1) || sensor1;
     sensor2 = parseFloat(req.query.sensor2) || sensor2;
-    console.log(`Received sensor values - Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+    console.log(`Updated sensor values - Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`); // Log for verification
     res.send(`Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
 });
+
 
 // Send sensor data to the chart or graph in the client-side JavaScript
 
