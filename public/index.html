@@ -194,6 +194,53 @@
                 },
             },
         });
+
+      // Function to fetch data and update charts
+      async function fetchDataAndUpdateCharts() {
+            try {
+                const response = await fetch('/data'); // Fetch the last 60 data points
+                const data = await response.json();
+
+                // If it's the initial load, populate the chart with historical data
+                if (sensorLineChart.data.labels.length === 0) {
+                    sensorLineChart.data.labels = data.timestamps; // Set timestamps for x-axis
+                    sensorLineChart.data.datasets[0].data = data.sensor1Data; // Historical data for Sensor 1
+                    sensorLineChart.data.datasets[1].data = data.sensor2Data; // Historical data for Sensor 2
+                    sensorLineChart.update();
+                } else {
+                    // Generate a new timestamp for the latest data
+                    const now = new Date();
+                    const timeLabel = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                    
+                    // Update the bar chart with the latest data
+                    sensorBarChart.data.datasets[0].data = [data.sensor1Data.slice(-1)[0], data.sensor2Data.slice(-1)[0]];
+                    sensorBarChart.update();
+
+                    // Add the new data point to the line chart
+                    sensorLineChart.data.labels.push(timeLabel);
+                    sensorLineChart.data.datasets[0].data.push(data.sensor1Data.slice(-1)[0]);
+                    sensorLineChart.data.datasets[1].data.push(data.sensor2Data.slice(-1)[0]);
+
+                    // Remove the oldest data point if we exceed 60 points
+                    if (sensorLineChart.data.labels.length > 60) {
+                        sensorLineChart.data.labels.shift();
+                        sensorLineChart.data.datasets[0].data.shift();
+                        sensorLineChart.data.datasets[1].data.shift();
+                    }
+                    sensorLineChart.update();
+                }
+            } catch (error) {
+                console.error('Error fetching sensor data:', error);
+            }
+        }
+
+        // Call `fetchDataAndUpdateCharts` every 5 seconds
+        setInterval(fetchDataAndUpdateCharts, 5000);
+
+        // Initial call to load historical data when the page first loads
+        fetchDataAndUpdateCharts();
+
+
     </script>
 </body>
 </html>
