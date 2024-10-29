@@ -5,55 +5,195 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sensor Data Visualization</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Center the page and set background */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        /* Container for charts with adjusted width and height */
+        .chart-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 1400x; /* Bredde for hele boksen */
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Styling for each chart box */
+        .chart-box {
+            width: 700px;
+            height: 600px;
+            background: #ffffff;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
 </head>
 <body>
     <h1>Sensor Data Visualization</h1>
-    <canvas id="sensorChart" width="400" height="200"></canvas>
+
+    <div class="chart-container">
+        <!-- Bar Chart -->
+        <div class="chart-box">
+            <canvas id="sensorBarChart"></canvas>
+            <p class="chart-title">Sensor Bar Chart</p>
+        </div>
+        
+        <!-- Line Chart -->
+        <div class="chart-box">
+            <canvas id="sensorLineChart"></canvas>
+            <p class="chart-title">Sensor Line Chart</p>
+        </div>
+    </div>
 
     <script>
-        const ctx = document.getElementById('sensorChart').getContext('2d');
-        const sensorChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Sensor 1', 'Sensor 2'],
-                datasets: [{
-                    label: 'Sensor Values',
-                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
-                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                    borderWidth: 1,
-                    data: [0, 0] // Initial values
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 1
-                    }
-                }
-            }
-        });
-
-        // Function to fetch data from /data endpoint and update the chart
-        async function fetchDataAndUpdateChart() {
+        async function fetchDataAndUpdateCharts() {
             try {
-                const response = await fetch('/data');
+                const response = await fetch('/data'); // Hent de seneste sensorværdier
                 const data = await response.json();
-                console.log(data);
-                
-                // Update chart with fetched data
-                sensorChart.data.datasets[0].data = [data.sensor1, data.sensor2];
-                sensorChart.update();
+
+                // Opdater bar chart med sensor data
+                sensorBarChart.data.datasets[0].data = [data.sensor1, data.sensor2];
+                sensorBarChart.update();
+
+                // Generer et tidsstempel i formatet HH:MM
+                const now = new Date();
+                const timeLabel = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+                // Opdater line chart med tidsseriedata
+                if (sensorLineChart.data.labels.length >= 60) {
+                    sensorLineChart.data.labels.shift(); // Fjern det ældste tidspunkt
+                    sensorLineChart.data.datasets[0].data.shift();
+                    sensorLineChart.data.datasets[1].data.shift();
+                }
+
+                // Tilføj nyt tidsstempel og nye data
+                sensorLineChart.data.labels.push(timeLabel);
+                sensorLineChart.data.datasets[0].data.push(data.sensor1);
+                sensorLineChart.data.datasets[1].data.push(data.sensor2);
+                sensorLineChart.update();
             } catch (error) {
-                console.error('Error fetching sensor data:', error);
+                console.error('Fejl ved hentning af sensor data:', error);
             }
         }
 
-        // Fetch and update chart every 5 seconds (or adjust timing as needed)
-        setInterval(fetchDataAndUpdateChart, 5000);
+        // Kald fetchDataAndUpdateCharts hver 5. sekund
+        setInterval(fetchDataAndUpdateCharts, 5000);
 
-        // Initial fetch when page loads
-        fetchDataAndUpdateChart();
+        // Initialiser bar chart
+        const barCtx = document.getElementById('sensorBarChart').getContext('2d');
+        const sensorBarChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Sensor 1', 'Sensor 2'],
+                datasets: [
+                    {
+                        label: 'Sensor Values',
+                        data: [0, 0], // Startværdi som bliver opdateret
+                        backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
+                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                        borderWidth: 1,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: -10,
+                        max: 30,
+                        title: {
+                            display: true,
+                            text: 'Degrees Celsius'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Sensor Number'
+                        }
+                    }
+                },
+            },
+        });
+
+        // Initialiser line chart
+        const lineCtx = document.getElementById('sensorLineChart').getContext('2d');
+        const sensorLineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: [], // Tom til at starte med
+                datasets: [
+                    {
+                        label: 'Sensor 1',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    },
+                    {
+                        label: 'Sensor 2',
+                        data: [],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 2,
+                        pointHoverRadius: 4
+                    }
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: -10,
+                        max: 30,
+                        title: {
+                            display: true,
+                            text: 'Degrees Celsius'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (HH:MM)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                },
+            },
+        });
     </script>
 </body>
 </html>
