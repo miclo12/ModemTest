@@ -27,16 +27,17 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            width: 700x; /* Bredde for hele boksen */
+            width: 100%;
+            max-width: 800px;
             padding: 15px;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        /* Styling for each chart box */
         .chart-box {
-            width: 350px;
+            width: 100%;
+            max-width: 400px;
             height: 300px;
             background: #ffffff;
             padding: 10px;
@@ -48,103 +49,65 @@
             font-weight: bold;
             margin-top: 5px;
         }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>Sensor Data Visualization</h1>
-
     <div class="chart-container">
-        <!-- Bar Chart -->
+        <!-- Live Line Chart -->
         <div class="chart-box">
-            <canvas id="sensorBarChart"></canvas>
-            <p class="chart-title">Sensor Bar Chart</p>
-        </div>
-        
-        <!-- Line Chart -->
-        <div class="chart-box">
-            <canvas id="sensorLineChart"></canvas>
-            <p class="chart-title">Sensor Line Chart</p>
+            <canvas id="liveSensorLineChart"></canvas>
+            <p class="chart-title">Live Sensor Line Chart</p>
         </div>
     </div>
+
+    <!-- Button to show latest data page -->
+    <button onclick="window.location.href='/latest'">Show Latest 10 Values</button>
 
     <script>
         async function fetchDataAndUpdateCharts() {
             try {
-                const response = await fetch('/data'); // Hent de seneste sensorværdier
+                const response = await fetch('/data'); // Fetch live sensor data
                 const data = await response.json();
 
-                // Opdater bar chart med sensor data
-                sensorBarChart.data.datasets[0].data = [data.sensor1, data.sensor2];
-                sensorBarChart.update();
-
-                // Generer et tidsstempel i formatet HH:MM
+                // Generate current timestamp
                 const now = new Date();
                 const timeLabel = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-                // Opdater line chart med tidsseriedata
-                if (sensorLineChart.data.labels.length >= 60) {
-                    sensorLineChart.data.labels.shift(); // Fjern det ældste tidspunkt
-                    sensorLineChart.data.datasets[0].data.shift();
-                    sensorLineChart.data.datasets[1].data.shift();
+                // Update line chart with latest data
+                liveSensorLineChart.data.labels.push(timeLabel);
+                liveSensorLineChart.data.datasets[0].data.push(data.sensor1Data.slice(-1)[0]);
+                liveSensorLineChart.data.datasets[1].data.push(data.sensor2Data.slice(-1)[0]);
+
+                if (liveSensorLineChart.data.labels.length > 60) {
+                    liveSensorLineChart.data.labels.shift();
+                    liveSensorLineChart.data.datasets[0].data.shift();
+                    liveSensorLineChart.data.datasets[1].data.shift();
                 }
 
-                // Tilføj nyt tidsstempel og nye data
-                sensorLineChart.data.labels.push(timeLabel);
-                sensorLineChart.data.datasets[0].data.push(data.sensor1);
-                sensorLineChart.data.datasets[1].data.push(data.sensor2);
-                sensorLineChart.update();
+                liveSensorLineChart.update();
             } catch (error) {
-                console.error('Fejl ved hentning af sensor data:', error);
+                console.error('Error fetching live sensor data:', error);
             }
         }
 
-        // Kald fetchDataAndUpdateCharts hver 5. sekund
-        setInterval(fetchDataAndUpdateCharts, 5000);
-
-        // Initialiser bar chart
-        const barCtx = document.getElementById('sensorBarChart').getContext('2d');
-        const sensorBarChart = new Chart(barCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Sensor 1', 'Sensor 2'],
-                datasets: [
-                    {
-                        label: 'Sensor Values',
-                        data: [0, 0], // Startværdi som bliver opdateret
-                        backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 99, 132, 0.2)'],
-                        borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                        borderWidth: 1,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        min: -10,
-                        max: 30,
-                        title: {
-                            display: true,
-                            text: 'Degrees Celsius'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Sensor Number'
-                        }
-                    }
-                },
-            },
-        });
-
-        // Initialiser line chart
-        const lineCtx = document.getElementById('sensorLineChart').getContext('2d');
-        const sensorLineChart = new Chart(lineCtx, {
+        // Initialize live line chart
+        const liveCtx = document.getElementById('liveSensorLineChart').getContext('2d');
+        const liveSensorLineChart = new Chart(liveCtx, {
             type: 'line',
             data: {
-                labels: [], // Tom til at starte med
+                labels: [],
                 datasets: [
                     {
                         label: 'Sensor 1',
@@ -152,9 +115,7 @@
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 1,
-                        fill: false,
-                        pointRadius: 2,
-                        pointHoverRadius: 4
+                        fill: false
                     },
                     {
                         label: 'Sensor 2',
@@ -162,11 +123,9 @@
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         borderColor: 'rgba(255, 99, 132, 1)',
                         borderWidth: 1,
-                        fill: false,
-                        pointRadius: 2,
-                        pointHoverRadius: 4
+                        fill: false
                     }
-                ],
+                ]
             },
             options: {
                 responsive: true,
@@ -175,72 +134,17 @@
                     y: {
                         min: -10,
                         max: 30,
-                        title: {
-                            display: true,
-                            text: 'Degrees Celsius'
-                        }
+                        title: { display: true, text: 'Degrees Celsius' }
                     },
                     x: {
-                        title: {
-                            display: true,
-                            text: 'Time (HH:MM)'
-                        }
+                        title: { display: true, text: 'Time (HH:MM)' }
                     }
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                },
-            },
+                }
+            }
         });
 
-      // Function to fetch data and update charts
-      async function fetchDataAndUpdateCharts() {
-            try {
-                const response = await fetch('/data'); // Fetch the last 60 data points
-                const data = await response.json();
-
-                // If it's the initial load, populate the chart with historical data
-                if (sensorLineChart.data.labels.length === 0) {
-                    sensorLineChart.data.labels = data.timestamps; // Set timestamps for x-axis
-                    sensorLineChart.data.datasets[0].data = data.sensor1Data; // Historical data for Sensor 1
-                    sensorLineChart.data.datasets[1].data = data.sensor2Data; // Historical data for Sensor 2
-                    sensorLineChart.update();
-                } else {
-                    // Generate a new timestamp for the latest data
-                    const now = new Date();
-                    const timeLabel = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-                    
-                    // Update the bar chart with the latest data
-                    sensorBarChart.data.datasets[0].data = [data.sensor1Data.slice(-1)[0], data.sensor2Data.slice(-1)[0]];
-                    sensorBarChart.update();
-
-                    // Add the new data point to the line chart
-                    sensorLineChart.data.labels.push(timeLabel);
-                    sensorLineChart.data.datasets[0].data.push(data.sensor1Data.slice(-1)[0]);
-                    sensorLineChart.data.datasets[1].data.push(data.sensor2Data.slice(-1)[0]);
-
-                    // Remove the oldest data point if we exceed 60 points
-                    if (sensorLineChart.data.labels.length > 60) {
-                        sensorLineChart.data.labels.shift();
-                        sensorLineChart.data.datasets[0].data.shift();
-                        sensorLineChart.data.datasets[1].data.shift();
-                    }
-                    sensorLineChart.update();
-                }
-            } catch (error) {
-                console.error('Error fetching sensor data:', error);
-            }
-        }
-
-        // Call `fetchDataAndUpdateCharts` every 5 seconds
+        // Fetch data every 5 seconds
         setInterval(fetchDataAndUpdateCharts, 5000);
-
-        // Initial call to load historical data when the page first loads
-        fetchDataAndUpdateCharts();
-
-
     </script>
 </body>
 </html>

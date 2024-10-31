@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latest Sensor Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        .chart-container {
+            width: 600px;
+            height: 400px;
+            background-color: #ffffff;
+            padding: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .average-box {
+            margin-top: 20px;
+            padding: 15px;
+            width: 100%;
+            max-width: 600px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Latest Sensor Data</h1>
+
+    <div class="chart-container">
+        <canvas id="latestSensorLineChart"></canvas>
+        <p class="chart-title">Last 10 Sensor Values</p>
+    </div>
+
+    <div class="average-box" id="averageBox">
+        Average: Calculating...
+    </div>
+
+    <button class="back-button" onclick="window.location.href='index.html'">Back to Live Chart</button>
+
+    <script>
+        const ctx = document.getElementById('latestSensorLineChart').getContext('2d');
+        const latestSensorLineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // tidsstempler
+                datasets: [
+                    {
+                        label: 'Sensor 1',
+                        data: [],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: false,
+                    },
+                    {
+                        label: 'Sensor 2',
+                        data: [],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Degrees Celsius'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time (HH:MM)'
+                        }
+                    }
+                }
+            }
+        });
+
+        let latestTimestamp = null;
+
+        async function fetchLatestData() {
+            try {
+                const response = await fetch('/data');
+                const data = await response.json();
+
+                if (data.timestamps.length > 0) {
+                    const newTimestamp = data.timestamps[data.timestamps.length - 1];
+
+                    if (newTimestamp !== latestTimestamp) {
+                        latestTimestamp = newTimestamp;
+
+                        // Update chart with latest data
+                        latestSensorLineChart.data.labels = data.timestamps;
+                        latestSensorLineChart.data.datasets[0].data = data.sensor1Data;
+                        latestSensorLineChart.data.datasets[1].data = data.sensor2Data;
+                        latestSensorLineChart.update();
+
+                        // Calculate averages
+                        const sensor1Average = calculateAverage(data.sensor1Data);
+                        const sensor2Average = calculateAverage(data.sensor2Data);
+
+                        // Display averages in the box
+                        document.getElementById('averageBox').textContent =
+                            `Average: Sensor 1 = ${sensor1Average.toFixed(2)}°C, Sensor 2 = ${sensor2Average.toFixed(2)}°C`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching latest sensor data:', error);
+            }
+        }
+
+        // Helper function to calculate average
+        function calculateAverage(data) {
+            const sum = data.reduce((acc, value) => acc + value, 0);
+            return sum / data.length;
+        }
+
+        setInterval(fetchLatestData, 10000);
+
+        fetchLatestData();
+    </script>
+</body>
+</html>
