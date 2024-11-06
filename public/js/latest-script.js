@@ -47,9 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    let latestTimestamp = null;
-
-    async function fetchLatestData() {
+     let latestTimestamp = null;
+     async function fetchLatestData() {
         try {
             const response = await fetch(`/data?cacheBuster=${Date.now()}`);
             const data = await response.json();
@@ -91,6 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Fetch data every 10 seconds
-    setInterval(fetchLatestData, 10000);
+    setInterval(fetchLatestData, 20000);
     fetchLatestData();
 });
