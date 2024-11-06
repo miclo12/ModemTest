@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         options: {
             responsive: true,
+            animation: false, // Disable animation for performance
             scales: {
                 y: {
                     beginAtZero: true,
@@ -47,8 +48,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-     let latestTimestamp = null;
-     async function fetchLatestData() {
+    let latestTimestamp = null;
+
+    // Fetch and update data with debouncing
+    const fetchLatestData = async () => {
         try {
             const response = await fetch(`/data?cacheBuster=${Date.now()}`);
             const data = await response.json();
@@ -63,7 +66,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     latestSensorLineChart.data.labels = data.timestamps;
                     latestSensorLineChart.data.datasets[0].data = data.sensor1Data;
                     latestSensorLineChart.data.datasets[1].data = data.sensor2Data;
-                    latestSensorLineChart.update();
+
+                    // Debounced chart update
+                    requestAnimationFrame(() => {
+                        latestSensorLineChart.update();
+                    });
 
                     // Calculate averages
                     const sensor1Average = calculateAverage(data.sensor1Data);
@@ -80,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             console.error('Error fetching latest sensor data:', error);
         }
-    }
+    };
 
     // Helper function to calculate average
     function calculateAverage(data) {
@@ -89,7 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return sum / data.length;
     }
 
-    // Fetch data every 10 seconds
+    // Set interval to fetch data every 20 seconds
     setInterval(fetchLatestData, 20000);
-    fetchLatestData();
+    fetchLatestData(); // Initial fetch on page load
 });
+
