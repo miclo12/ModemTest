@@ -61,7 +61,7 @@
 
     <div class="chart-container">
         <canvas id="latestSensorLineChart"></canvas>
-        <p class="chart-title">Last 10 Sensor Values</p>
+        <p class="chart-title">Latest Sensor Values</p>
     </div>
 
     <div class="average-box" id="averageBox">
@@ -117,8 +117,9 @@
 
         async function fetchLatestData() {
             try {
-                const response = await fetch('/data');
-                const data = await response.json();
+               // const response = await fetch('/data');
+               const response = await fetch(`/data?cacheBuster=${Date.now()}`);
+               const data = await response.json();
 
                 if (data.timestamps.length > 0) {
                     const newTimestamp = data.timestamps[data.timestamps.length - 1];

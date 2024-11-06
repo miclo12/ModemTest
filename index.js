@@ -14,6 +14,13 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.use(express.json());
 
+
+// Global cache control to prevent outdated content
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 // Serve static files from 'public' directory (like index.html)
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -40,7 +47,8 @@ app.get('/sensor-data', async (req, res) => {
       console.error('Error adding data to Supabase:', error);
       res.status(500).send('Failed to add sensor data to the database.');
     } else {
-      res.send(`Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+      //res.send(`Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+      res.json({ sensor1, sensor2, timestamp: new Date().toISOString() });
     }
 });
 

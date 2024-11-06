@@ -73,12 +73,13 @@
     </div>
 
     <!-- Button to show latest data page -->
-    <button onclick="window.location.href='/latest'">Show Latest 10 Values</button>
+    <button onclick="window.location.href='/latest'">Show Latest Values</button>
 
     <script>
         async function fetchDataAndUpdateCharts() {
             try {
-                const response = await fetch('/data'); // Fetch live sensor data
+                //const response = await fetch('/data'); // Fetch live sensor data
+                const response = await fetch(`/data?cacheBuster=${Date.now()}`);
                 const data = await response.json();
 
                 // Generate current timestamp
