@@ -72,35 +72,82 @@ app.get('/sensor-data', async (req, res) => {
   } else {
     res.send(`POST: Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
   }
-});*/
+});
+*/
+///////////////////////////////////////////////////////////////////////////7
 
-// Handler for JSON or URL-encoded POST requests
 app.post('/sensor-data', async (req, res) => {
-  // Retrieve sensor data from the request body
-  const { sensor1: newSensor1, sensor2: newSensor2 } = req.body;
+  const { sensor1_values, sensor2_values } = req.body;
+  
+  // Validér at input er arrays og har korrekt længde
+  /*if (!Array.isArray(sensor1_values) || !Array.isArray(sensor2_values) || 
+      sensor1_values.length !== 10 || sensor2_values.length !== 10) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: 'Each sensor must provide exactly 10 values as arrays.'
+    });
+  }*/
+    if (!Array.isArray(sensor1_values) || !Array.isArray(sensor2_values)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Both sensors must provide values as arrays.'
+      });
+    }
+  
+    // Validér array længder
+    if (sensor1_values.length < 2 || sensor1_values.length > 10 ||
+        sensor2_values.length < 2 || sensor2_values.length > 10) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Each sensor must provide between 2 and 10 values.'
+      });
+    }
+ 
 
-  // Update sensor values (fallback to existing values if not provided)
-  sensor1 = newSensor1 || sensor1;
-  sensor2 = newSensor2 || sensor2;
+  try {
+    // Indsæt data for sensor 1
+    for (let value of sensor1_values) {
+      const { error: error1 } = await supabase
+        .from('Sensor_data')
+        .insert([
+          { 
+            sensor_Id: 'sensor_1', 
+            temperature: parseFloat(value)
+          }
+        ]);
+      
+      if (error1) throw error1;
+    }
 
-  console.log(`Opdaterede sensorværdier via POST - Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+    // Indsæt data for sensor 2
+    for (let value of sensor2_values) {
+      const { error: error2 } = await supabase
+        .from('Sensor_data')
+        .insert([
+          { 
+            sensor_Id: 'sensor_2', 
+            temperature: parseFloat(value)
+          }
+        ]);
+      
+      if (error2) throw error2;
+    }
 
-  // Store data in Supabase
-  const { data, error } = await supabase
-    .from('Sensor_data')
-    .insert([
-        { sensor_Id: 'sensor_1', temperature: sensor1 },
-        { sensor_Id: 'sensor_2', temperature: sensor2 }
-    ]);
+    res.json({
+      message: 'Successfully updated sensor data',
+      sensor1_values,
+      sensor2_values,
+      timestamp: new Date().toISOString()
+    });
 
-  if (error) {
-    console.error('Fejl ved tilføjelse af data til Supabase:', error);
-    res.status(500).send('Kunne ikke tilføje sensor data til databasen.');
-  } else {
-    res.send(`POST: Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+  } catch (err) {
+    console.error('Error inserting data into Supabase:', err);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Could not add sensor data to the database.',
+    });
   }
 });
-
 
 
 
