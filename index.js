@@ -1,7 +1,7 @@
 require('dotenv').config();
-const express = require('express');
+const express = require('express'); // Server biblotek
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js'); //Forbindelse til databasen
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,9 +11,7 @@ const supabaseUrl = 'https://pncxmgwqajdxbubxxgyl.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-
 app.use(express.json());
-
 
 // Global cache control to prevent outdated content
 app.use((req, res, next) => {
@@ -21,7 +19,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from 'public' directory (like index.html)
+// Serve static files from 'public' directory (f.eks. lindex.html)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Variables to store the latest sensor values
@@ -53,7 +51,7 @@ app.get('/sensor-data', async (req, res) => {
 });
 
 // Route for POST-request (alternativ metode til dataoverførsel)
-app.post('/sensor-data', async (req, res) => {
+/*app.post('/sensor-data', async (req, res) => {
   const { sensor1: newSensor1, sensor2: newSensor2 } = req.body;
   sensor1 = newSensor1 || sensor1;
   sensor2 = newSensor2 || sensor2;
@@ -74,7 +72,36 @@ app.post('/sensor-data', async (req, res) => {
   } else {
     res.send(`POST: Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
   }
+});*/
+
+// Handler for JSON or URL-encoded POST requests
+app.post('/sensor-data', async (req, res) => {
+  // Retrieve sensor data from the request body
+  const { sensor1: newSensor1, sensor2: newSensor2 } = req.body;
+
+  // Update sensor values (fallback to existing values if not provided)
+  sensor1 = newSensor1 || sensor1;
+  sensor2 = newSensor2 || sensor2;
+
+  console.log(`Opdaterede sensorværdier via POST - Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+
+  // Store data in Supabase
+  const { data, error } = await supabase
+    .from('Sensor_data')
+    .insert([
+        { sensor_Id: 'sensor_1', temperature: sensor1 },
+        { sensor_Id: 'sensor_2', temperature: sensor2 }
+    ]);
+
+  if (error) {
+    console.error('Fejl ved tilføjelse af data til Supabase:', error);
+    res.status(500).send('Kunne ikke tilføje sensor data til databasen.');
+  } else {
+    res.send(`POST: Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
+  }
 });
+
+
 
 
 // Route to send sensor data to the client for live chart
@@ -106,7 +133,7 @@ app.get('/data', async (req, res) => {
     }
 });
 
-// Route to fetch latest 10 saved sensor values
+// Route to fetch latest saved sensor values
 app.get('/latest-data', async (req, res) => {
     try {
         const { data: sensorData, error } = await supabase
