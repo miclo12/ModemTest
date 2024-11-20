@@ -1,0 +1,42 @@
+const express = require('express');
+const axios = require('axios');
+
+const app = express();
+
+// Middleware til at parse rå tekst fra modem
+app.use(express.text());
+
+// Proxy route til at håndtere modem-forespørgsler
+app.post('/proxy-sensor-data', async (req, res) => {
+    try {
+        const rawData = req.body; // Modtag rådata fra modem
+        const jsonPayload = JSON.parse(rawData); // Parse til JSON
+
+        console.log('Rådata fra modem:', jsonPayload);
+
+        // Tilføj Content-Type header og videresend til /sensor-data route
+        const response = await axios.post(
+            'https://modem-test.vercel.app/sensor-data',
+            jsonPayload,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        console.log('Svar fra sensor-data:', response.data);
+
+        // Returner svaret fra sensor-data til modemmet
+        res.status(response.status).send(response.data);
+    } catch (error) {
+        console.error('Fejl i proxy:', error.message);
+        res.status(500).send({
+            error: 'Kunne ikke behandle forespørgslen.',
+            message: error.message,
+        });
+    }
+});
+
+// Eksporter app, så den kan bruges i andre filer
+//module.exports = app;

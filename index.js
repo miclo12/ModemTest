@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express'); // Server biblotek
+//const axios = require('axios');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js'); //Forbindelse til databasen
 
@@ -10,6 +11,11 @@ const port = process.env.PORT || 3000;
 const supabaseUrl = 'https://pncxmgwqajdxbubxxgyl.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+/////////////////////////////////////////////////////////////////////////////////////////
+app.use(express.text());
+app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded data
+///////////////////////////////////////////////////////////////////////////////////////
 
 app.use(express.json());
 
@@ -50,43 +56,79 @@ app.get('/sensor-data', async (req, res) => {
     }
 });
 
-// Route for POST-request (alternativ metode til dataoverførsel)
-/*app.post('/sensor-data', async (req, res) => {
-  const { sensor1: newSensor1, sensor2: newSensor2 } = req.body;
-  sensor1 = newSensor1 || sensor1;
-  sensor2 = newSensor2 || sensor2;
-
-  console.log(`Opdaterede sensorværdier via POST - Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
-
-  // Gem data i Supabase
-  const { data, error } = await supabase
-    .from('Sensor_data')
-    .insert([
-        { sensor_Id: 'sensor_1', temperature: sensor1 },
-        { sensor_Id: 'sensor_2', temperature: sensor2 }
-    ]);
-
-  if (error) {
-    console.error('Fejl ved tilføjelse af data til Supabase:', error);
-    res.status(500).send('Kunne ikke tilføje sensor data til databasen.');
-  } else {
-    res.send(`POST: Sensor 1: ${sensor1}, Sensor 2: ${sensor2}`);
-  }
-});
-*/
-///////////////////////////////////////////////////////////////////////////7
+///////////////////////////////////////////////////////////////
 
 app.post('/sensor-data', async (req, res) => {
-  const { sensor1_values, sensor2_values } = req.body;
-  
-  // Validér at input er arrays og har korrekt længde
-  /*if (!Array.isArray(sensor1_values) || !Array.isArray(sensor2_values) || 
-      sensor1_values.length !== 10 || sensor2_values.length !== 10) {
-    return res.status(400).json({
-      error: 'Bad Request',
-      message: 'Each sensor must provide exactly 10 values as arrays.'
-    });
-  }*/
+  try {
+      // Parse the URL-encoded string into arrays
+      const sensor1_values = req.body.sensor1_values?.split(',').map(Number);
+      const sensor2_values = req.body.sensor2_values?.split(',').map(Number);
+
+      // Validate that both are arrays with the required length
+      if (!Array.isArray(sensor1_values) || !Array.isArray(sensor2_values)) {
+          return res.status(400).json({
+              error: 'Bad Request',
+              message: 'Both sensors must provide values as arrays.',
+          });
+      }
+
+      if (
+          sensor1_values.length < 2 ||
+          sensor1_values.length > 10 ||
+          sensor2_values.length < 2 ||
+          sensor2_values.length > 10
+      ) {
+          return res.status(400).json({
+              error: 'Bad Request',
+              message: 'Each sensor must provide between 2 and 10 values.',
+          });
+      }
+
+      // Insert sensor1 values into the database
+      for (let value of sensor1_values) {
+          const { error: error1 } = await supabase.from('Sensor_data').insert([
+              {
+                  sensor_Id: 'sensor_1',
+                  temperature: parseFloat(value),
+              },
+          ]);
+          if (error1) throw error1;
+      }
+
+      // Insert sensor2 values into the database
+      for (let value of sensor2_values) {
+          const { error: error2 } = await supabase.from('Sensor_data').insert([
+              {
+                  sensor_Id: 'sensor_2',
+                  temperature: parseFloat(value),
+              },
+          ]);
+          if (error2) throw error2;
+      }
+
+      // Respond with success
+      res.json({
+          message: 'Successfully updated sensor data',
+          sensor1_values,
+          sensor2_values,
+          timestamp: new Date().toISOString(),
+      });
+  } catch (err) {
+      console.error('Error inserting data into Supabase:', err);
+      res.status(500).json({
+          error: 'Internal Server Error',
+          message: 'Could not add sensor data to the database.',
+      });
+  }
+});
+
+
+/////////////////////////////////////////////////////////////
+
+
+
+/*app.post('/sensor-data', async (req, res) => {
+  const { sensor1_values, sensor2_values } = req.body;  
     if (!Array.isArray(sensor1_values) || !Array.isArray(sensor2_values)) {
       return res.status(400).json({
         error: 'Bad Request',
@@ -147,7 +189,7 @@ app.post('/sensor-data', async (req, res) => {
       message: 'Could not add sensor data to the database.',
     });
   }
-});
+});*/
 
 
 
