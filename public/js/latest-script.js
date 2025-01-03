@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json();
 
             if (data.timestamps.length > 0) {
-                const newTimestamp = data.timestamps[data.timestamps.length - 1];
+                const newTimestamp = data.timestamps[data.timestamps.length -1];
 
                 if (newTimestamp !== latestTimestamp) {
                     latestTimestamp = newTimestamp;
