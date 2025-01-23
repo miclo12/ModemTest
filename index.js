@@ -62,10 +62,11 @@ app.get('/sensor-data', async (req, res) => {
 const mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
 
 // Subscribe to the topic
-const topic = 'miclo/sensor';
-mqttClient.on('connect', () => {
-  console.log('Connected to MQTT broker');
-  mqttClient.subscribe(topic, (err) => {
+ const topic = 'miclo/sensor';
+ mqttClient.on('connect', () => {
+ console.log('Connected to MQTT broker');
+  //mqttClient.subscribe(topic, (err) => {
+    mqttClient.subscribe(topic, { qos: 2 }, (err) => {
     if (err) {
       console.error('Failed to subscribe to topic:', err);
     } else {
@@ -82,8 +83,52 @@ mqttClient.on('message', async (topic, message) => {
     // Parse the message (expected format: sensor1_values=...&sensor2_values=...)
     const params = new URLSearchParams(message.toString());
     const sensor1_values = params.get('sensor1_values')?.split(',').map(Number);
-    const sensor2_values = params.get('sensor2_values')?.split(',').map(Number);
+    //const sensor2_values = params.get('sensor2_values')?.split(',').map(Number);
 
+     
+// Validate the parsed values
+if (
+    !Array.isArray(sensor1_values) ||
+    //!Array.isArray(sensor2_values) ||
+    sensor1_values.length < 2 ||
+    sensor1_values.length > 10
+    //sensor2_values.length < -1 ||
+    //sensor2_values.length > 10
+  ) {
+    console.error('Invalid sensor data format or range');
+    return;
+  }
+
+  // Log the received data
+  console.log('Validated sensor data:', {
+    sensor1_values,
+    sensor2_values,
+  });
+
+  // Batch insert sensor1 values
+  const sensor1Data = sensor1_values.map((value) => ({
+    sensor_Id: 'sensor_1',
+    temperature: value,
+  }));
+  const { error: error1 } = await supabase.from('Sensor_data').insert(sensor1Data);
+  if (error1) throw new Error(`Failed to insert sensor1 data: ${error1.message}`);
+
+  // Batch insert sensor2 values
+  const sensor2Data = sensor2_values.map((value) => ({
+    sensor_Id: 'sensor_2',
+    temperature: value,
+  }));
+  const { error: error2 } = await supabase.from('Sensor_data').insert(sensor2Data);
+  if (error2) throw new Error(`Failed to insert sensor2 data: ${error2.message}`);
+
+  console.log('Sensor data saved successfully');
+} catch (err) {
+  console.error('Error processing MQTT message:', err);
+}
+});
+
+    
+    /*
     if (!sensor1_values || !sensor2_values) {
       console.error('Invalid message format');
       return;
@@ -109,7 +154,7 @@ mqttClient.on('message', async (topic, message) => {
   } catch (err) {
     console.error('Failed to process MQTT message:', err);
   }
-});
+});*/
 
 
 //-----------------------------------------------------------------------
@@ -202,10 +247,13 @@ app.get('/data', async (req, res) => {
           const sensor2Data = sortedData.filter(item => item.sensor_Id === 'sensor_2').map(item => item.temperature);
           //const timestamps = sortedData.map(item => new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
             
-            const timestamps = sortedData.map(item => {
+            /*const timestamps = sortedData.map(item => {
             const date = new Date(item.created_at);
             return `${date.toLocaleDateString([], { year: 'numeric', month: '2-digit', day: '2-digit' })} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-          });
+          });*/
+
+          const timestamps = sortedData.map(item => new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
           
           res.json({ sensor1Data, sensor2Data, timestamps });
         }
