@@ -83,17 +83,17 @@ mqttClient.on('message', async (topic, message) => {
     // Parse the message (expected format: sensor1_values=...&sensor2_values=...)
     const params = new URLSearchParams(message.toString());
     const sensor1_values = params.get('sensor1_values')?.split(',').map(Number);
-    //const sensor2_values = params.get('sensor2_values')?.split(',').map(Number);
+    const sensor2_values = params.get('sensor2_values')?.split(',').map(Number);
 
      
 // Validate the parsed values
 if (
     !Array.isArray(sensor1_values) ||
-    //!Array.isArray(sensor2_values) ||
+    !Array.isArray(sensor2_values) ||
     sensor1_values.length < 2 ||
-    sensor1_values.length > 10
-    //sensor2_values.length < -1 ||
-    //sensor2_values.length > 10
+    sensor1_values.length > 10 ||
+    sensor2_values.length < 2 ||
+    sensor2_values.length > 10
   ) {
     console.error('Invalid sensor data format or range');
     return;
@@ -114,12 +114,12 @@ if (
   if (error1) throw new Error(`Failed to insert sensor1 data: ${error1.message}`);
 
   // Batch insert sensor2 values
-  const sensor2Data = sensor2_values.map((value) => ({
+   const sensor2Data = sensor2_values.map((value) => ({
     sensor_Id: 'sensor_2',
     temperature: value,
-  }));
-  const { error: error2 } = await supabase.from('Sensor_data').insert(sensor2Data);
-  if (error2) throw new Error(`Failed to insert sensor2 data: ${error2.message}`);
+   }));
+   const { error: error2 } = await supabase.from('Sensor_data').insert(sensor2Data);
+   if (error2) throw new Error(`Failed to insert sensor2 data: ${error2.message}`);
 
   console.log('Sensor data saved successfully');
 } catch (err) {

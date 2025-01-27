@@ -57,9 +57,10 @@ h1 {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 70%; /* Adjust height if needed */
+    height: 95%; /* Adjust height if needed */
     top: 0;
-    gap: 2px; /* Use 'px' unit */
+    /*gap: 2px; /* Use 'px' unit */
+    gap: 0;
     font-size: 10px;
     color: #333;
 }

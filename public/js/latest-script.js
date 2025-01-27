@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Set interval to fetch data every 20 seconds
-    setInterval(fetchLatestData, 20000);
+    setInterval(fetchLatestData, 10000);
     fetchLatestData(); // Initial fetch on page load
 });
 

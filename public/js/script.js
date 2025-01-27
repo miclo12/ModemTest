@@ -81,4 +81,4 @@ const liveSensorLineChart = new Chart(liveCtx, {
     }
 });
 
-setInterval(fetchDataAndUpdateCharts, 10000);
+setInterval(fetchDataAndUpdateCharts, 5000);
