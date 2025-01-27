@@ -62,7 +62,7 @@ app.get('/sensor-data', async (req, res) => {
 const mqttClient = mqtt.connect('mqtt://test.mosquitto.org');
 
 // Subscribe to the topic
- const topic = 'miclo/sensor';
+ const topic = 'TSP/sensor';
  mqttClient.on('connect', () => {
  console.log('Connected to MQTT broker');
   //mqttClient.subscribe(topic, (err) => {
